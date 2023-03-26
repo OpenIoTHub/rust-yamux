@@ -38,10 +38,10 @@ pub use crate::frame::{
     header::{HeaderDecodeError, StreamId},
     FrameDecodeError,
 };
-#[cfg(target_os = "espidf")]
-pub const DEFAULT_CREDIT: u32 = 256 * 1024; // as per yamux specification
 #[cfg(not(target_os = "espidf"))]
 pub const DEFAULT_CREDIT: u32 = 4 * 1024; // as per yamux specification
+#[cfg(target_os = "espidf")]
+pub const DEFAULT_CREDIT: u32 = 256 * 1024; // as per yamux specification
 
 pub type Result<T> = std::result::Result<T, ConnectionError>;
 
@@ -65,10 +65,10 @@ const MAX_COMMAND_BACKLOG: usize = 32;
 ///
 /// For details on why this concrete value was chosen, see
 /// https://github.com/paritytech/yamux/issues/100.
-#[cfg(target_os = "espidf")]
-const DEFAULT_SPLIT_SEND_SIZE: usize = 16 * 1024;
 #[cfg(not(target_os = "espidf"))]
 const DEFAULT_SPLIT_SEND_SIZE: usize = 4 * 1024;
+#[cfg(target_os = "espidf")]
+const DEFAULT_SPLIT_SEND_SIZE: usize = 16 * 1024;
 
 /// Specifies when window update frames are sent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -118,13 +118,22 @@ pub struct Config {
 }
 
 impl Default for Config {
+    #[cfg(not(target_os = "espidf"))]
     fn default() -> Self {
         Config {
             receive_window: DEFAULT_CREDIT,
-            #[cfg(target_os = "espidf")]
-            max_buffer_size: 1024 * 1024,
-            #[cfg(not(target_os = "espidf"))]
             max_buffer_size: 4 * 1024,
+            max_num_streams: 8192,
+            window_update_mode: WindowUpdateMode::OnRead,
+            read_after_close: true,
+            split_send_size: DEFAULT_SPLIT_SEND_SIZE,
+        }
+    }
+    #[cfg(target_os = "espidf")]
+    fn default() -> Self {
+        Config {
+            receive_window: DEFAULT_CREDIT,
+            max_buffer_size: 1024 * 1024,
             max_num_streams: 8192,
             window_update_mode: WindowUpdateMode::OnRead,
             read_after_close: true,
